@@ -25,7 +25,7 @@ public class AudioPlayerService extends Service {
     public static final int MEDIA_PLAYER_SERVICE_CLIENT_UNBOUND = 30;
 
 
-    private MediaPlayer mMediaPlayer;
+    static MediaPlayer mMediaPlayer;
 
     private Messenger mServiceMessenger;
     private Messenger messengerToApp;
@@ -53,6 +53,7 @@ public class AudioPlayerService extends Service {
 
 
     }
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int stratdId) {
@@ -89,8 +90,9 @@ public class AudioPlayerService extends Service {
     private void loadMusic(){
 
         try {
-            mMediaPlayer.setDataSource("/sdcard/Download/music.mp3");
+            mMediaPlayer.setDataSource("/sdcard/music.mp3");
             mMediaPlayer.prepare();
+
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -102,6 +104,7 @@ public class AudioPlayerService extends Service {
 
     private void playPerform() {
         Log.v("log_iit", "start requested in service");
+        MainActivity.simpleSeekBar.setMax(mMediaPlayer.getDuration());
         mMediaPlayer.start();
 
         try {

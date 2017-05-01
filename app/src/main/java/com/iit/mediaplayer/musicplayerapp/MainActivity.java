@@ -24,9 +24,12 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,7 +56,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean isServiceConnected = false;
 
     private boolean isPlaying = false;
-
+    static  SeekBar simpleSeekBar;
+    private TextView time;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +72,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         mHandler = new AppHandler(this);
         mAppMessenger = new Messenger(mHandler);
+        simpleSeekBar=(SeekBar) findViewById(R.id.simpleSeekBar); // initiate the progress bar
+        simpleSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                                                     int progressChangedValue = 0;
+
+                                                     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                                                         progressChangedValue = progress;
+                                                         if (fromUser) {
+                                                             AudioPlayerService.mMediaPlayer.seekTo(progressChangedValue);
+                                                         }
+                                                     }
+                                                     public void onStartTrackingTouch(SeekBar seekBar ) {
+
+                                                     }
+                                                     public void onStopTrackingTouch(SeekBar seekBar) {
+                                                         //
+                                                     }
+                                                 });
+
+
+            time = (TextView) findViewById(R.id.textView);
 
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -92,12 +116,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startService(serviceIntent);
     }
 
+    private String elWa9t(){
+        int x=AudioPlayerService.mMediaPlayer.getCurrentPosition()/1000;
+        int seconds = x % 60;
+        int minutes = x / 60;
+        DecimalFormat formatter = new DecimalFormat("00");
+        String wa9t = (String.valueOf(formatter.format(minutes))+":"+String.valueOf(formatter.format(seconds)));
+        return wa9t;
+    }
+
+
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.play_button:
                 if (!isPlaying) {
                     playAudio();
+                    updateSeek();
                 } else {
                     pauseAudio();
                 }
@@ -109,12 +144,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
+
     private void playAudio() {
         if (messengerToService != null) {
             try {
                 Message message = Message.obtain();
                 message.what = AudioPlayerService.MEDIA_PLAYER_CONTROL_START;
                 messengerToService.send(message);
+
+
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
@@ -128,7 +166,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Message message = Message.obtain();
                 message.what = AudioPlayerService.MEDIA_PLAYER_CONTROL_PAUSE;
                 messengerToService.send(message);
-            } catch (RemoteException e) {
+                time.setText(elWa9t());
+
+        } catch (RemoteException e) {
                 e.printStackTrace();
             }
         }
@@ -141,6 +181,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Message message = Message.obtain();
                 message.what = AudioPlayerService.MEDIA_PLAYER_CONTROL_STOP;
                 messengerToService.send(message);
+                simpleSeekBar.setProgress(0);
+                time.setText("00:00");
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
@@ -192,6 +234,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         isPlaying = false;
         mPlayButton.setText("Play");
     }
+
+    private void updateSeek(){
+        final Handler h = new Handler();
+        final int delay = 500; //milliseconds
+
+        h.postDelayed(new Runnable(){
+            public void run(){
+                if (AudioPlayerService.mMediaPlayer.isPlaying()){
+                simpleSeekBar.setProgress(AudioPlayerService.mMediaPlayer.getCurrentPosition());
+                time.setText(elWa9t());
+                h.postDelayed(this, delay);
+            }}
+        }, delay);
+    }
+
+  ;
 
     private void checkPermissions() {
         List<String> permissionsNeeded = new ArrayList<String>();
